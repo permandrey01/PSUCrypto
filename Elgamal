@@ -1,0 +1,111 @@
+using System;
+using System.Numerics;
+using System.Security.Cryptography;
+
+namespace Elgamal
+{
+    class Program
+    {
+        static BigInteger ExtendedEuclid(BigInteger e, BigInteger p)
+        {
+            BigInteger a = e;
+            BigInteger b = p, x = 0, d = 1;
+            while (a > 0)
+            {
+                BigInteger q_ = b / a;
+                BigInteger y = a;
+                a = b % a;
+                b = y;
+                y = d;
+                d = x - q_ * d;
+                x = y;
+            }
+            x = (x + p) % p;
+            return x;
+        }
+        static int NOD(int a, int b)
+        {
+            while (a != b)
+            {
+                if (a > b)
+                {
+                    a -= b;
+                }
+                else
+                {
+                    b -= a;
+                }
+            }
+            return a;
+        }
+
+        static void Main(string[] args)
+        {
+            BigInteger p = 109;
+            BigInteger g = 6;
+            Console.WriteLine("g=" + g);
+            BigInteger x;
+            Random next = new Random();
+            x = next.Next(2, (int)p - 2);
+            Console.WriteLine("x=" + x);
+            BigInteger y = BigInteger.Pow(g, (int)x) % p;
+            Console.WriteLine("y=" + y);
+            Console.WriteLine("Открытый ключ:(y,g,p)= (" + y + "," + g + "," + p + ")");
+
+            //sign
+            int k;
+            int m = 0;
+            string mess = "Hello";
+            //hash
+            foreach (char item in mess)
+            {
+                m += (int)item % (int)p;
+            }
+            //choose k
+            while (true)
+            {
+                k = next.Next(2, (int)(p - 2));
+                if (NOD((int)k, (int)(p - 1)) == 1) break;
+            }
+            Console.WriteLine("k=" + k);
+            //r=g^k mod p
+            BigInteger r = BigInteger.ModPow(g, k, p);
+            //s
+            BigInteger s = ((BigInteger)(m - x * r) * ExtendedEuclid((BigInteger)k, p - 1)) % (p - 1);
+            if (s<0)
+            { 
+                s = s + p - 1;
+            }
+            Console.WriteLine("(r,s)=(" + r + "," + (s) + ")");
+
+            //check sign
+            if ((r>0) && (r<p) && (s>0) && (s < p - 1))
+            {
+                int m2 = 0;
+                foreach (char item in mess)
+                {
+                    m2 += (int)item % (int)p;
+                    
+                }
+                if (m == m2)
+                {
+                    Console.WriteLine("m=m2");
+                    BigInteger left = (BigInteger.ModPow(y, r, p) * BigInteger.ModPow(r, s, p)) %p;
+                    BigInteger right = (BigInteger.ModPow(g, m, p));
+                    if (left==right)
+                    {
+                        Console.WriteLine("Molodec");
+                    }
+
+                }
+                else
+                    Console.WriteLine(" Problems");
+
+
+            }
+            else
+                Console.WriteLine(" Problems");
+        }
+    }
+}
+
